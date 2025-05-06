@@ -21,7 +21,7 @@ impl Default for GameState {
             hp: 100,
             enemy_number: 0,
             enemy_labels: Vec::new(),
-            spawn_timer: Timer::from_seconds(2.0, TimerMode::Repeating),
+            spawn_timer: Timer::from_seconds(0.5, TimerMode::Repeating),
         }
     }
 }
@@ -39,6 +39,7 @@ fn main() {
     game.add_logic(control_logic);
     game.add_logic(spawn_enemy_logic);
     game.add_logic(move_enemy);
+    game.add_logic(collision_logic);
     game.run(game_state);
 }
 
@@ -102,21 +103,18 @@ fn move_enemy(engine: &mut Engine, game_state: &mut GameState) {
         let edge_x = engine.window_dimensions.x / 2.0 - 25.0;
         if engine.sprites.get(enemy_label).is_some() {
             let enemy = engine.sprites.get_mut(enemy_label).unwrap();
-            enemy.translation += Vec2::new(-20.0, 0.0);
+            enemy.translation += Vec2::new(-30.0, 0.0);
             let current_x = enemy.translation.x;
-            if current_x == edge_x {
-                engine.sprites.remove(enemy_label);
-            }
-            for event in engine.collision_events.drain(..) {
-                if event.state == CollisionState::Begin {
-                    let enemy_type = enemy_label.clone();
-                    match enemy_type
-                        .split("_")
-                        .nth(1)
-                        .unwrap()
-                        .parse::<u32>()
-                        .unwrap()
-                    {
+        }
+    }
+}
+
+fn collision_logic(engine: &mut Engine, game_state: &mut GameState) {
+    for event in engine.collision_events.drain(..) {
+        if event.state == CollisionState::Begin && event.pair.one_starts_with("Player") {
+            for label in [event.pair.0, event.pair.1] {
+                if label != "Player" {
+                    match label.split("_").nth(1).unwrap().parse::<u32>().unwrap() {
                         x if x % 5 == 0 && x % 3 == 0 => {
                             game_state.hp -= 5;
                         }
@@ -131,7 +129,7 @@ fn move_enemy(engine: &mut Engine, game_state: &mut GameState) {
                         }
                     }
 
-                    engine.sprites.remove(enemy_label);
+                    engine.sprites.remove(&label);
                 }
             }
         }
