@@ -11,6 +11,7 @@ struct GameState {
     enemy_number: u32,
     enemy_labels: Vec<String>,
     spawn_timer: Timer,
+    game_over: bool,
 }
 
 impl Default for GameState {
@@ -22,6 +23,7 @@ impl Default for GameState {
             enemy_number: 0,
             enemy_labels: Vec::new(),
             spawn_timer: Timer::from_seconds(0.5, TimerMode::Repeating),
+            game_over: false,
         }
     }
 }
@@ -69,7 +71,7 @@ fn control_logic(engine: &mut Engine, game_state: &mut GameState) {
 }
 
 fn spawn_enemy_logic(engine: &mut Engine, game_state: &mut GameState) {
-    if game_state.spawn_timer.tick(engine.delta).just_finished() {
+    if game_state.spawn_timer.tick(engine.delta).just_finished() && !game_state.game_over {
         game_state.enemy_number += 1;
         game_state
             .enemy_labels
@@ -153,4 +155,18 @@ fn progress_logic(engine: &mut Engine, game_state: &mut GameState) {
     let score = engine.texts.get_mut("score").unwrap();
     score.translation = Vec2::new(label_x_position - 40.0, label_y_position - 40.0);
     score.value = format!("Score: {0}", game_state.score);
+}
+
+fn game_over_logic(engine: &mut Engine, game_state: &mut GameState) {
+    // check health, if at 0, set game_over to true
+    // delete player sprite?
+    // display message with high score
+    // save high score
+    todo!();
+}
+
+fn game_difficulty_logic(engine: &mut Engine, game_state: &mut GameState) {
+    // check score
+    // decrease timer on point thresholds e.g. 80 -> 0.3, 150 -> 0.1
+    todo!();
 }
