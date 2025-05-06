@@ -1,7 +1,7 @@
-use std::{thread::sleep, time::Duration};
+use std::time::Duration;
 
 use rand::Rng;
-use rusty_engine::prelude::{bevy::math::Vec2Swizzles, *};
+use rusty_engine::prelude::*;
 
 #[derive(Resource)]
 struct GameState {
@@ -28,19 +28,23 @@ impl Default for GameState {
 
 fn main() {
     let mut game = Game::new();
-
+    let binding = std::fs::read_to_string("./high_score.txt").unwrap_or(String::from("0"));
+    let high_score = binding.trim();
     let game_state = GameState::default();
     let player = game.add_sprite("Player", SpritePreset::RacingCarRed);
     player.translation = Vec2::new(-650.0, 0.0);
     player.collision = true;
-    let hp = game.add_text("hp", "HP: 100");
+    let _ = game.add_text("hp", "HP: 100");
+    let _ = game.add_text("score", "Score: 0");
+    let _ = game.add_text("high_score", format!("High Score: {0}", high_score));
+    let _ = game.add_text("score", "0");
 
-    game.add_logic(progress_logic);
-    game.add_logic(control_logic);
-    game.add_logic(spawn_enemy_logic);
-    game.add_logic(move_enemy);
-    game.add_logic(collision_logic);
-    game.run(game_state);
+    let _ = game.add_logic(progress_logic);
+    let _ = game.add_logic(control_logic);
+    let _ = game.add_logic(spawn_enemy_logic);
+    let _ = game.add_logic(move_enemy);
+    let _ = game.add_logic(collision_logic);
+    let _ = game.run(game_state);
 }
 
 fn control_logic(engine: &mut Engine, game_state: &mut GameState) {
@@ -99,12 +103,14 @@ fn spawn_enemy_logic(engine: &mut Engine, game_state: &mut GameState) {
 }
 
 fn move_enemy(engine: &mut Engine, game_state: &mut GameState) {
+    let player_x = engine.sprites.get_mut("Player").unwrap().translation.x;
     for enemy_label in game_state.enemy_labels.iter_mut() {
-        let edge_x = engine.window_dimensions.x / 2.0 - 25.0;
-        if engine.sprites.get(enemy_label).is_some() {
-            let enemy = engine.sprites.get_mut(enemy_label).unwrap();
+        if let Some(enemy) = engine.sprites.get_mut(enemy_label) {
             enemy.translation += Vec2::new(-30.0, 0.0);
-            let current_x = enemy.translation.x;
+            if enemy.translation.x < -655.0 {
+                engine.sprites.remove(enemy_label);
+                game_state.score += 1;
+            }
         }
     }
 }
@@ -116,16 +122,16 @@ fn collision_logic(engine: &mut Engine, game_state: &mut GameState) {
                 if label != "Player" {
                     match label.split("_").nth(1).unwrap().parse::<u32>().unwrap() {
                         x if x % 5 == 0 && x % 3 == 0 => {
-                            game_state.hp -= 5;
+                            game_state.hp = game_state.hp.checked_sub(5).unwrap_or(0);
                         }
                         x if x % 5 == 0 => {
-                            game_state.hp -= 4;
+                            game_state.hp = game_state.hp.checked_sub(4).unwrap_or(0);
                         }
                         x if x % 3 == 0 => {
-                            game_state.hp -= 6;
+                            game_state.hp = game_state.hp.checked_sub(6).unwrap_or(0);
                         }
                         _ => {
-                            game_state.hp -= 2;
+                            game_state.hp = game_state.hp.checked_sub(2).unwrap_or(0);
                         }
                     }
 
@@ -140,6 +146,11 @@ fn progress_logic(engine: &mut Engine, game_state: &mut GameState) {
     let label_y_position = (engine.window_dimensions.y / 2.0) - 50.0;
     let label_x_position = (engine.window_dimensions.x / 2.0) - 50.0;
     let hp = engine.texts.get_mut("hp").unwrap();
-    hp.translation = Vec2::new(label_x_position, label_y_position + 10.0);
+    hp.translation = Vec2::new(-label_x_position, label_y_position + 10.0);
     hp.value = format!("HP: {0}", game_state.hp);
+    let high_score = engine.texts.get_mut("high_score").unwrap();
+    high_score.translation = Vec2::new(label_x_position - 60.0, label_y_position - 10.0);
+    let score = engine.texts.get_mut("score").unwrap();
+    score.translation = Vec2::new(label_x_position - 40.0, label_y_position - 40.0);
+    score.value = format!("Score: {0}", game_state.score);
 }
