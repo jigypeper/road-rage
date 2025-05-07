@@ -40,33 +40,39 @@ fn main() {
     let _ = game.add_text("score", "Score: 0");
     let _ = game.add_text("high_score", format!("High Score: {0}", high_score));
     let _ = game.add_text("score", "0");
+    let game_over_text = game.add_text("game_over", "GAME OVER!");
+    game_over_text.translation = Vec2::new(0.0, 5000.0);
+    game_over_text.font_size = 60.0;
 
     let _ = game.add_logic(progress_logic);
     let _ = game.add_logic(control_logic);
     let _ = game.add_logic(spawn_enemy_logic);
     let _ = game.add_logic(move_enemy);
     let _ = game.add_logic(collision_logic);
+    let _ = game.add_logic(game_over_logic);
     let _ = game.run(game_state);
 }
 
 fn control_logic(engine: &mut Engine, game_state: &mut GameState) {
-    let player = engine.sprites.get_mut("Player").unwrap();
-    let current_y = player.translation.y;
-    let acceptable_y_up = (engine.window_dimensions.y / 2.0) - 45.0;
-    let acceptable_y_down = -((engine.window_dimensions.y / 2.0) - 45.0);
-    if engine.keyboard_state.pressed(KeyCode::Up) && current_y < acceptable_y_up {
-        player.rotation = std::f32::consts::FRAC_PI_6;
-        player.translation += Vec2::new(0.0, 5.0);
-    }
-    if engine.keyboard_state.just_released(KeyCode::Up) {
-        player.rotation -= std::f32::consts::FRAC_PI_6;
-    }
-    if engine.keyboard_state.pressed(KeyCode::Down) && current_y > acceptable_y_down {
-        player.rotation = -std::f32::consts::FRAC_PI_6;
-        player.translation += Vec2::new(0.0, -5.0);
-    }
-    if engine.keyboard_state.just_released(KeyCode::Down) {
-        player.rotation += std::f32::consts::FRAC_PI_6;
+    if !game_state.game_over {
+        let player = engine.sprites.get_mut("Player").unwrap();
+        let current_y = player.translation.y;
+        let acceptable_y_up = (engine.window_dimensions.y / 2.0) - 45.0;
+        let acceptable_y_down = -((engine.window_dimensions.y / 2.0) - 45.0);
+        if engine.keyboard_state.pressed(KeyCode::Up) && current_y < acceptable_y_up {
+            player.rotation = std::f32::consts::FRAC_PI_6;
+            player.translation += Vec2::new(0.0, 5.0);
+        }
+        if engine.keyboard_state.just_released(KeyCode::Up) {
+            player.rotation -= std::f32::consts::FRAC_PI_6;
+        }
+        if engine.keyboard_state.pressed(KeyCode::Down) && current_y > acceptable_y_down {
+            player.rotation = -std::f32::consts::FRAC_PI_6;
+            player.translation += Vec2::new(0.0, -5.0);
+        }
+        if engine.keyboard_state.just_released(KeyCode::Down) {
+            player.rotation += std::f32::consts::FRAC_PI_6;
+        }
     }
 }
 
@@ -105,39 +111,43 @@ fn spawn_enemy_logic(engine: &mut Engine, game_state: &mut GameState) {
 }
 
 fn move_enemy(engine: &mut Engine, game_state: &mut GameState) {
-    let player_x = engine.sprites.get_mut("Player").unwrap().translation.x;
-    for enemy_label in game_state.enemy_labels.iter_mut() {
-        if let Some(enemy) = engine.sprites.get_mut(enemy_label) {
-            enemy.translation += Vec2::new(-30.0, 0.0);
-            if enemy.translation.x < -655.0 {
-                engine.sprites.remove(enemy_label);
-                game_state.score += 1;
+    if !game_state.game_over {
+        let player_x = engine.sprites.get_mut("Player").unwrap().translation.x;
+        for enemy_label in game_state.enemy_labels.iter_mut() {
+            if let Some(enemy) = engine.sprites.get_mut(enemy_label) {
+                enemy.translation += Vec2::new(-30.0, 0.0);
+                if enemy.translation.x < -655.0 {
+                    engine.sprites.remove(enemy_label);
+                    game_state.score += 1;
+                }
             }
         }
     }
 }
 
 fn collision_logic(engine: &mut Engine, game_state: &mut GameState) {
-    for event in engine.collision_events.drain(..) {
-        if event.state == CollisionState::Begin && event.pair.one_starts_with("Player") {
-            for label in [event.pair.0, event.pair.1] {
-                if label != "Player" {
-                    match label.split("_").nth(1).unwrap().parse::<u32>().unwrap() {
-                        x if x % 5 == 0 && x % 3 == 0 => {
-                            game_state.hp = game_state.hp.checked_sub(5).unwrap_or(0);
+    if !game_state.game_over {
+        for event in engine.collision_events.drain(..) {
+            if event.state == CollisionState::Begin && event.pair.one_starts_with("Player") {
+                for label in [event.pair.0, event.pair.1] {
+                    if label != "Player" {
+                        match label.split("_").nth(1).unwrap().parse::<u32>().unwrap() {
+                            x if x % 5 == 0 && x % 3 == 0 => {
+                                game_state.hp = game_state.hp.checked_sub(5).unwrap_or(0);
+                            }
+                            x if x % 5 == 0 => {
+                                game_state.hp = game_state.hp.checked_sub(4).unwrap_or(0);
+                            }
+                            x if x % 3 == 0 => {
+                                game_state.hp = game_state.hp.checked_sub(6).unwrap_or(0);
+                            }
+                            _ => {
+                                game_state.hp = game_state.hp.checked_sub(2).unwrap_or(0);
+                            }
                         }
-                        x if x % 5 == 0 => {
-                            game_state.hp = game_state.hp.checked_sub(4).unwrap_or(0);
-                        }
-                        x if x % 3 == 0 => {
-                            game_state.hp = game_state.hp.checked_sub(6).unwrap_or(0);
-                        }
-                        _ => {
-                            game_state.hp = game_state.hp.checked_sub(2).unwrap_or(0);
-                        }
-                    }
 
-                    engine.sprites.remove(&label);
+                        engine.sprites.remove(&label);
+                    }
                 }
             }
         }
@@ -162,7 +172,20 @@ fn game_over_logic(engine: &mut Engine, game_state: &mut GameState) {
     // delete player sprite?
     // display message with high score
     // save high score
-    todo!();
+    if game_state.hp == 0 {
+        game_state.game_over = true;
+        engine.sprites.drain();
+        engine.texts.get_mut("game_over").unwrap().translation = Vec2::new(0.0, 0.0);
+        game_state.high_score = if game_state.score > game_state.high_score {
+            game_state.score
+        } else {
+            game_state.high_score
+        };
+        if engine.keyboard_state.pressed(KeyCode::Escape) {
+            let _ = std::fs::write("./high_score.txt", format!("{0}", game_state.high_score));
+            engine.should_exit;
+        }
+    }
 }
 
 fn game_difficulty_logic(engine: &mut Engine, game_state: &mut GameState) {
