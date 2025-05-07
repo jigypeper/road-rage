@@ -36,6 +36,7 @@ fn main() {
     let player = game.add_sprite("Player", SpritePreset::RacingCarRed);
     player.translation = Vec2::new(-650.0, 0.0);
     player.collision = true;
+    let _ = game.audio_manager.play_music(MusicPreset::Classy8Bit, 0.1);
     let _ = game.add_text("hp", "HP: 100");
     let _ = game.add_text("score", "Score: 0");
     let _ = game.add_text("high_score", format!("High Score: {0}", high_score));
@@ -149,6 +150,8 @@ fn collision_logic(engine: &mut Engine, game_state: &mut GameState) {
                         engine.sprites.remove(&label);
                     }
                 }
+                engine.sprites.get_mut("Player").unwrap().rotation += 1.25 * std::f32::consts::PI;
+                engine.audio_manager.play_sfx(SfxPreset::Impact2, 0.2);
             }
         }
     }
@@ -173,6 +176,7 @@ fn game_over_logic(engine: &mut Engine, game_state: &mut GameState) {
     // display message with high score
     // save high score
     if game_state.hp == 0 {
+        engine.audio_manager.stop_music();
         game_state.game_over = true;
         engine.sprites.drain();
         engine.texts.get_mut("game_over").unwrap().translation = Vec2::new(0.0, 0.0);
