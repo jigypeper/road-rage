@@ -191,5 +191,10 @@ fn game_over_logic(engine: &mut Engine, game_state: &mut GameState) {
 fn game_difficulty_logic(engine: &mut Engine, game_state: &mut GameState) {
     // check score
     // decrease timer on point thresholds e.g. 80 -> 0.3, 150 -> 0.1
-    todo!();
+    match game_state.score {
+        x if x > 60 => game_state.spawn_timer = Timer::from_seconds(0.3, TimerMode::Repeating),
+        x if x > 150 => game_state.spawn_timer = Timer::from_seconds(0.2, TimerMode::Repeating),
+        x if x > 250 => game_state.spawn_timer = Timer::from_seconds(0.1, TimerMode::Repeating),
+        _ => game_state.spawn_timer = Timer::from_seconds(0.5, TimerMode::Repeating),
+    }
 }
