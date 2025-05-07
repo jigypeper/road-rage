@@ -139,7 +139,7 @@ fn move_road_line(engine: &mut Engine, game_state: &mut GameState) {
         for sprite in engine.sprites.values_mut() {
             if sprite.label.starts_with("roadline") {
                 sprite.translation.x -= 30.0;
-                if sprite.translation.x < -675.0 {
+                if sprite.translation.x < -775.0 {
                     sprite.translation.x += 1500.0;
                 }
             }
