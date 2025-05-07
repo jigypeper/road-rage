@@ -36,6 +36,7 @@ fn main() {
     let player = game.add_sprite("Player", SpritePreset::RacingCarRed);
     player.translation = Vec2::new(-650.0, 0.0);
     player.collision = true;
+    player.layer = 10.0;
     let _ = game.audio_manager.play_music(MusicPreset::Classy8Bit, 0.1);
     let _ = game.add_text("hp", "HP: 100");
     let _ = game.add_text("score", "Score: 0");
@@ -45,10 +46,17 @@ fn main() {
     game_over_text.translation = Vec2::new(0.0, 5000.0);
     game_over_text.font_size = 60.0;
 
+    for i in 0..20 {
+        let road_line = game.add_sprite(format!("roadline_{i}"), SpritePreset::RacingBarrierWhite);
+        road_line.scale = 0.1;
+        road_line.translation.x = (-600 + 150 * i) as f32;
+    }
+
     let _ = game.add_logic(progress_logic);
     let _ = game.add_logic(control_logic);
     let _ = game.add_logic(spawn_enemy_logic);
     let _ = game.add_logic(move_enemy);
+    let _ = game.add_logic(move_road_line);
     let _ = game.add_logic(collision_logic);
     let _ = game.add_logic(game_over_logic);
     let _ = game.run(game_state);
@@ -120,6 +128,19 @@ fn move_enemy(engine: &mut Engine, game_state: &mut GameState) {
                 if enemy.translation.x < -655.0 {
                     engine.sprites.remove(enemy_label);
                     game_state.score += 1;
+                }
+            }
+        }
+    }
+}
+
+fn move_road_line(engine: &mut Engine, game_state: &mut GameState) {
+    if !game_state.game_over {
+        for sprite in engine.sprites.values_mut() {
+            if sprite.label.starts_with("roadline") {
+                sprite.translation.x -= 30.0;
+                if sprite.translation.x < -675.0 {
+                    sprite.translation.x += 1500.0;
                 }
             }
         }
