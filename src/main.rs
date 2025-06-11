@@ -192,10 +192,6 @@ fn progress_logic(engine: &mut Engine, game_state: &mut GameState) {
 }
 
 fn game_over_logic(engine: &mut Engine, game_state: &mut GameState) {
-    // check health, if at 0, set game_over to true
-    // delete player sprite?
-    // display message with high score
-    // save high score
     if game_state.hp == 0 {
         engine.audio_manager.stop_music();
         game_state.game_over = true;
@@ -214,8 +210,6 @@ fn game_over_logic(engine: &mut Engine, game_state: &mut GameState) {
 }
 
 fn game_difficulty_logic(engine: &mut Engine, game_state: &mut GameState) {
-    // check score
-    // decrease timer on point thresholds e.g. 80 -> 0.3, 150 -> 0.1
     match game_state.score {
         x if x > 60 => game_state.spawn_timer = Timer::from_seconds(0.3, TimerMode::Repeating),
         x if x > 150 => game_state.spawn_timer = Timer::from_seconds(0.2, TimerMode::Repeating),
